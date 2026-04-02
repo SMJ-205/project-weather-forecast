@@ -33,16 +33,11 @@ def get_latest_processed_file():
     return max(list_of_files, key=os.path.getctime)
 
 def load_to_sheets(file_path):
-    """Appends data from CSV to Google Sheets."""
+    """Appends data from CSV to Google Sheets with deduplication."""
     if not os.path.exists(SERVICE_ACCOUNT_FILE):
         print(f"Error: Credentials not found at {SERVICE_ACCOUNT_FILE}")
         return
         
-    # Read the data
-    df = pd.read_csv(file_path)
-    # Convert dataframe to list of lists for Sheets API
-    values = [df.columns.tolist()] + df.values.tolist() if is_sheet_empty() else df.values.tolist()
-
     try:
         creds = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES)
@@ -51,17 +46,45 @@ def load_to_sheets(file_path):
         # Extract the clean ID from the potentially messy config
         clean_spreadsheet_id = extract_spreadsheet_id(SPREADSHEET_ID)
         
-        # Call the Sheets API
-        spreadsheet = service.spreadsheets().get(spreadsheetId=clean_spreadsheet_id).execute()
-        sheets = [s['properties']['title'] for s in spreadsheet.get('sheets', [])]
+        # 1. Verify sheet existence
+        spreadsheet_meta = service.spreadsheets().get(spreadsheetId=clean_spreadsheet_id).execute()
+        sheets = [s['properties']['title'] for s in spreadsheet_meta.get('sheets', [])]
         
         if SHEET_NAME not in sheets:
-            print(f"Error: Sheet '{SHEET_NAME}' not found in spreadsheet.")
+            print(f"Error: Sheet '{SHEET_NAME}' not found.")
             print(f"Available sheets: {', '.join(sheets)}")
-            print("Please create a sheet named 'Weather_Data' or update SHEET_NAME in the script.")
             return
 
-        # Append data starting at the end of the current content
+        # 2. Fetch existing dates from Column A for deduplication
+        result = service.spreadsheets().values().get(
+            spreadsheetId=clean_spreadsheet_id, 
+            range=f"{SHEET_NAME}!A:A"
+        ).execute()
+        
+        existing_rows = result.get('values', [])
+        # Extract existing dates (skipping headers or empty rows)
+        existing_dates = set([row[0] for row in existing_rows if row])
+        
+        # 3. Filter the new dataframe
+        df = pd.read_csv(file_path)
+        df['date'] = df['date'].astype(str)
+        
+        new_data_df = df[~df['date'].isin(existing_dates)]
+        
+        if new_data_df.empty:
+            print(f"No new records found. All dates in {os.path.basename(file_path)} already exist in Google Sheets.")
+            return
+            
+        print(f"Found {len(new_data_df)} new records to append.")
+
+        # 4. Prepare data for append
+        # If the sheet is empty (excluding headers), add headers
+        if not existing_rows:
+            values = [new_data_df.columns.tolist()] + new_data_df.values.tolist()
+        else:
+            values = new_data_df.values.tolist()
+
+        # 5. Execute Append
         body = {'values': values}
         result = service.spreadsheets().values().append(
             spreadsheetId=clean_spreadsheet_id, 
@@ -69,24 +92,18 @@ def load_to_sheets(file_path):
             valueInputOption='USER_ENTERED', 
             body=body).execute()
         
-        print(f"{result.get('updates').get('updatedCells')} cells updated.")
+        print(f"Success: {result.get('updates').get('updatedRows')} rows appended to '{SHEET_NAME}'.")
         
     except Exception as e:
         print(f"An error occurred while loading to Sheets: {e}")
 
-def is_sheet_empty():
-    """Helper to check if sheet is empty to decide on headers."""
-    # In a simplified portfolio version, we might skip this and always append without headers
-    # or manage headers manually. For now, we append data only.
-    return False 
-
 def main():
     latest_file = get_latest_processed_file()
     if latest_file:
-        print(f"Loading data from: {latest_file}")
+        print(f"Processing latest file: {latest_file}")
         load_to_sheets(latest_file)
     else:
-        print("No processed file found to load.")
+        print("No processed data files (CSV) found in data/processed/")
 
 if __name__ == "__main__":
     main()
