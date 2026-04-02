@@ -6,6 +6,7 @@ from datetime import timedelta
 
 # Resolve the absolute path to ensure the DAG works regardless of where Airflow starts
 PROJECT_ROOT = "/Users/sarifmubdijantika/project-weather-forecast"
+PYTHON_EX = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"  # Link to your system Python with Pandas/Requests
 EXTRACT_SCRIPT = os.path.join(PROJECT_ROOT, "scripts/extract.py")
 TRANSFORM_SCRIPT = os.path.join(PROJECT_ROOT, "scripts/transform.py")
 LOAD_SCRIPT = os.path.join(PROJECT_ROOT, "scripts/load.py")
@@ -34,19 +35,22 @@ with DAG(
     # 1. Extraction Task
     t1_extract = BashOperator(
         task_id='extract_weather_data',
-        bash_command=f'python3 {EXTRACT_SCRIPT}',
+        bash_command=f'{PYTHON_EX} {EXTRACT_SCRIPT}',
+        cwd=PROJECT_ROOT
     )
 
     # 2. Transformation Task
     t2_transform = BashOperator(
         task_id='transform_weather_data',
-        bash_command=f'python3 {TRANSFORM_SCRIPT}',
+        bash_command=f'{PYTHON_EX} {TRANSFORM_SCRIPT}',
+        cwd=PROJECT_ROOT
     )
 
     # 3. Load Task (Push to Google Sheets)
     t3_load = BashOperator(
         task_id='load_to_google_sheets',
-        bash_command=f'python3 {LOAD_SCRIPT}',
+        bash_command=f'{PYTHON_EX} {LOAD_SCRIPT}',
+        cwd=PROJECT_ROOT
     )
 
     # Setting task dependencies
