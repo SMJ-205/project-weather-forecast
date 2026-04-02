@@ -93,4 +93,4 @@ ln -s $(pwd)/dags $AIRFLOW_HOME/dags
 Access the UI at `http://localhost:8080` to trigger `weather_forecast_pipeline_v1`.
 
 ---
-*Created by [Your Name] as a Portfolio Project.*
+*Created by SMJ-205 and his AI partner as a Portfolio Project.*
