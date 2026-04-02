@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# Credentials (Private)
+credentials/
+*.json
+
+# Data
+data/*.csv
+data/*.sqlite
+data/*.json
+
+# Airflow
+airflow/
+logs/
+*.db
+
+# OS
+.DS_Store
