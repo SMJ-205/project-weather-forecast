@@ -47,7 +47,7 @@ flowchart LR
 - **Languages:** Python 3.11 (Pandas, Requests)
 - **Orchestration:** Apache Airflow (Standalone) / n8n
 - **Storage:** Local Flat Files (CSV) & Google Sheets (Cloud Interface)
-- **Visualization:** Google Looker Studio
+- **Visualization:** Google Looker Studio https://lookerstudio.google.com/reporting/216d9484-73bf-4ec8-98a8-8891c18e00aa
 - **API:** [Open-Meteo](https://open-meteo.com) (Free, no-auth)
 
 ## 📊 Dashboard Preview
