@@ -51,7 +51,7 @@ flowchart LR
 - **API:** [Open-Meteo](https://open-meteo.com) (Free, no-auth)
 
 ## 📊 Dashboard Preview
-![Weather Insights Bandung](docs/assets/dashboard_preview.png)
+![Weather Insights Bandung](docs/assets/dashboard_preview.jpeg)
 *Figure 1: Sample Looker Studio Dashboard showing 7-day trends for Bandung.*
 
 ## 🚀 Key Insights Enabled
