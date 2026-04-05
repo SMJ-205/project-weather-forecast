@@ -1,4 +1,4 @@
-# 🌦️ WeatherDataOps: Automated Weather Insights Pipeline
+# 🌦️ WeatherDataOps: Automated Weather Report Pipeline
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Airflow](https://img.shields.io/badge/Orchestration-Apache%20Airflow-red.svg)](https://airflow.apache.org/)
