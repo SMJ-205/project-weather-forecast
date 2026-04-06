@@ -16,22 +16,24 @@ BASE_URL = "https://api.open-meteo.com/v1/forecast"
 RAW_DATA_PATH = "data/raw"
 
 def fetch_weather(city):
-    """Fetches a 7-day weather forecast for a given city."""
+    """Fetches hourly weather data for a given city (focusing on rain/radar)."""
     params = {
         "latitude": city["lat"],
         "longitude": city["lon"],
-        "daily": ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "wind_speed_10m_max"],
-        "timezone": "Asia/Jakarta"
+        "hourly": ["precipitation", "rain", "showers", "weather_code", "temperature_2m"],
+        "timezone": "Asia/Jakarta",
+        "past_days": 1,
+        "forecast_days": 1
     }
     
-    print(f"Fetching data for {city['name']}...")
+    print(f"Fetching hourly data for {city['name']}...")
     try:
         response = requests.get(BASE_URL, params=params)
         response.raise_for_status()
         data = response.json()
         
-        # Flattening the nested JSON 'daily' key
-        df = pd.DataFrame(data['daily'])
+        # Flattening the nested JSON 'hourly' key
+        df = pd.DataFrame(data['hourly'])
         df['city'] = city['name']
         df['latitude'] = city['lat']
         df['longitude'] = city['lon']

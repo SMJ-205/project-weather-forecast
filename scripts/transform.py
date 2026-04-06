@@ -8,33 +8,43 @@ TRANSFORMED_DATA_PATH = "data/processed"
 RAW_DATA_PATH = "data/raw"
 
 def clean_and_transform(df):
-    """Business logic for weather data transformation."""
-    # Convert dates to proper objects
+    """Business logic for weather data transformation (Hourly)."""
+    # Convert dates/times to proper objects
     df['time'] = pd.to_datetime(df['time'])
     
-    # Feature Engineering: Precipitation Intensity
+    # Weather Code Mapping (WMO codes)
+    WMO_CODES = {
+        0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+        45: "Fog", 48: "Depositing rime fog",
+        51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
+        61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
+        71: "Slight snow", 73: "Moderate snow", 75: "Heavy snow",
+        77: "Snow grains",
+        80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers",
+        95: "Thunderstorm", 96: "Thunderstorm with slight hail", 99: "Thunderstorm with heavy hail"
+    }
+    df['weather_desc'] = df['weather_code'].map(WMO_CODES).fillna("Unknown")
+    
+    # Feature Engineering: Hourly Rain Intensity
     def get_intensity(precip):
         if precip == 0: return "None"
         elif precip < 2.5: return "Light"
-        elif precip < 10: return "Moderate"
+        elif precip < 7.6: return "Moderate"
         else: return "Heavy"
         
-    df['rain_intensity'] = df['precipitation_sum'].apply(get_intensity)
-    
-    # Feature Engineering: Temperature Delta
-    df['temp_delta'] = df['temperature_2m_max'] - df['temperature_2m_min']
+    df['rain_intensity'] = df['precipitation'].apply(get_intensity)
     
     # Renaming for Clarity in Google Sheets/Looker
     df.rename(columns={
-        'time': 'date',
-        'temperature_2m_max': 'temp_max',
-        'temperature_2m_min': 'temp_min',
-        'precipitation_sum': 'precipitation',
-        'wind_speed_10m_max': 'wind_max'
+        'time': 'timestamp',
+        'temperature_2m': 'temp_c',
+        'precipitation': 'precip_mm',
+        'rain': 'rain_mm',
+        'showers': 'showers_mm'
     }, inplace=True)
     
-    # Sort by date and city
-    df.sort_values(by=['city', 'date'], inplace=True)
+    # Sort by timestamp and city
+    df.sort_values(by=['city', 'timestamp'], inplace=True)
     
     return df
 
