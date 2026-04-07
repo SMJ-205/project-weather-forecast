@@ -34,23 +34,35 @@ def load_to_sheets(file_path):
     """Overwrites Google Sheet with fresh dashboard data (NOW + 7 Days)."""
     # Handle credentials from file or environment variable (JSON string)
     creds = None
+    print(f"DEBUG: Checking for Google Credentials...")
+    
     if os.path.exists(SERVICE_ACCOUNT_FILE):
+        print(f"DEBUG: Loading credentials from file: {SERVICE_ACCOUNT_FILE}")
         creds = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     elif os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'):
-        info = json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'))
-        creds = service_account.Credentials.from_service_account_info(
-            info, scopes=SCOPES)
+        print(f"DEBUG: Loading credentials from Environment Variable...")
+        try:
+            info = json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'))
+            creds = service_account.Credentials.from_service_account_info(
+                info, scopes=SCOPES)
+            print(f"DEBUG: Successfully decoded JSON credentials.")
+        except Exception as e:
+            print(f"DEBUG: Error decoding JSON secret: {e}")
+            return
     
     if not creds:
-        print("Error: Google Credentials not found.")
+        print("Error: No Google Credentials found.")
         return
         
     try:
+        print("DEBUG: Building Google Sheets service...")
         service = build('sheets', 'v4', credentials=creds)
         clean_spreadsheet_id = extract_spreadsheet_id(SPREADSHEET_ID)
+        print(f"DEBUG: Using Spreadsheet ID: {clean_spreadsheet_id[:5]}...{clean_spreadsheet_id[-5:]}")
         
         # 1. Verify sheet existence
+        print(f"DEBUG: Fetching spreadsheet metadata for validation...")
         spreadsheet_meta = service.spreadsheets().get(spreadsheetId=clean_spreadsheet_id).execute()
         sheets = [s['properties']['title'] for s in spreadsheet_meta.get('sheets', [])]
         
@@ -59,11 +71,12 @@ def load_to_sheets(file_path):
             return
 
         # 2. Clear existing data for a "Fresh Refresh" (No History)
-        print(f"Clearing existing data in '{SHEET_NAME}' for fresh update...")
+        print(f"DEBUG: Clearing existing data in '{SHEET_NAME}' (A:Z)...")
         service.spreadsheets().values().clear(
             spreadsheetId=clean_spreadsheet_id, 
             range=f"{SHEET_NAME}!A:Z"
         ).execute()
+        print("DEBUG: Clear successful.")
         
         # 3. Prepare fresh data
         df = pd.read_csv(file_path)
@@ -72,7 +85,7 @@ def load_to_sheets(file_path):
         # Include headers in the first row
         values = [df.columns.tolist()] + df.values.tolist()
             
-        print(f"Loading {len(df)} forecast records (NOW + 7 Days)...")
+        print(f"DEBUG: Sending {len(df)} forecast records to API...")
 
         # 4. Execute Update (using A1 starting point)
         body = {'values': values}
@@ -82,10 +95,11 @@ def load_to_sheets(file_path):
             valueInputOption='USER_ENTERED', 
             body=body).execute()
         
+        print(f"DEBUG: API Update response received: {result.get('updatedCells')} cells updated.")
         print(f"Success: Dashboard updated for all Bandung regions.")
         
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred in load_to_sheets: {e}")
 
 def main():
     latest_file = get_latest_processed_file()
