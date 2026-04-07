@@ -14,7 +14,8 @@ def main():
     scripts = [
         "scripts/extract.py",
         "scripts/transform.py",
-        "scripts/load.py"
+        "scripts/load.py",
+        "scripts/cleanup.py"
     ]
     
     try:
