@@ -41,7 +41,8 @@ def fetch_weather(city):
     
     print(f"Fetching forecast for {city['name']}...")
     try:
-        response = requests.get(BASE_URL, params=params)
+        # Added 30-second timeout to prevent hanging on slow network
+        response = requests.get(BASE_URL, params=params, timeout=30)
         response.raise_for_status()
         data = response.json()
         

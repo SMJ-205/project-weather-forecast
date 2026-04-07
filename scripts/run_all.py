@@ -22,7 +22,8 @@ def main():
         for script in scripts:
             print(f"Running {script}...")
             # Use the current Python executable to ensure compatibility
-            subprocess.run([sys.executable, script], check=True)
+            # Added 10-minute timeout to prevent GHA hangs
+            subprocess.run([sys.executable, script], check=True, timeout=600)
             
         print("✅ Pipeline completed successfully!")
         
