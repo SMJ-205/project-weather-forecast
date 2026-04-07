@@ -30,10 +30,11 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: python scripts/run_all.py
 
-      - name: Commit and Push (Optional - if archiving raw data)
+      - name: Commit and Push (Dashboard Update)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/raw/*.csv data/processed/*.csv
-          git commit -m "Archive hourly weather data: $(date)" || echo "No changes to commit"
+          # Sync deletions and new files
+          git add -A data/
+          git commit -m "Update weather dashboard data: $(date)" || echo "No changes to commit"
           git push || echo "No changes to push"
