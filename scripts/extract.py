@@ -4,29 +4,42 @@ from datetime import datetime, timedelta
 import os
 import json
 
-# Configuration for Bandung and other cities
+# Configuration for Bandung Regions
 CITIES = [
-    {"name": "Bandung", "lat": -6.9175, "lon": 107.6191},
-    # Add more cities here as needed:
-    # {"name": "Jakarta", "lat": -6.2088, "lon": 106.8456},
-    # {"name": "Surabaya", "lat": -7.2575, "lon": 112.7521},
+    {"name": "Bandung (Central)", "lat": -6.9175, "lon": 107.6191},
+    {"name": "Bandung (North)", "lat": -6.85, "lon": 107.62},
+    {"name": "Bandung (West)", "lat": -6.88, "lon": 107.54},
+    {"name": "Bandung (East)", "lat": -6.92, "lon": 107.72},
+    {"name": "Bandung (South)", "lat": -7.00, "lon": 107.60},
 ]
 
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
 RAW_DATA_PATH = "data/raw"
 
 def fetch_weather(city):
-    """Fetches hourly weather data for a given city (focusing on rain/radar)."""
+    """Fetches hourly weather data for dashboard (NOW + 7 Days)."""
     params = {
         "latitude": city["lat"],
         "longitude": city["lon"],
-        "hourly": ["precipitation", "rain", "showers", "weather_code", "temperature_2m"],
+        "hourly": [
+            "temperature_2m", 
+            "relative_humidity_2m", 
+            "apparent_temperature", 
+            "precipitation", 
+            "rain", 
+            "showers", 
+            "weather_code", 
+            "cloud_cover", 
+            "wind_speed_10m", 
+            "uv_index", 
+            "visibility"
+        ],
         "timezone": "Asia/Jakarta",
-        "past_days": 1,
-        "forecast_days": 1
+        "past_days": 0,
+        "forecast_days": 8
     }
     
-    print(f"Fetching hourly data for {city['name']}...")
+    print(f"Fetching forecast for {city['name']}...")
     try:
         response = requests.get(BASE_URL, params=params)
         response.raise_for_status()

@@ -31,20 +31,19 @@ def get_latest_processed_file():
     return max(list_of_files, key=os.path.getctime)
 
 def load_to_sheets(file_path):
-    """Appends data from CSV to Google Sheets with hourly deduplication."""
+    """Overwrites Google Sheet with fresh dashboard data (NOW + 7 Days)."""
     # Handle credentials from file or environment variable (JSON string)
     creds = None
     if os.path.exists(SERVICE_ACCOUNT_FILE):
         creds = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     elif os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'):
-        # For GitHub Actions where we might pass the JSON string directly
         info = json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'))
         creds = service_account.Credentials.from_service_account_info(
             info, scopes=SCOPES)
     
     if not creds:
-        print("Error: Google Credentials not found (checked file and environment).")
+        print("Error: Google Credentials not found.")
         return
         
     try:
@@ -56,51 +55,34 @@ def load_to_sheets(file_path):
         sheets = [s['properties']['title'] for s in spreadsheet_meta.get('sheets', [])]
         
         if SHEET_NAME not in sheets:
-            print(f"Error: Sheet '{SHEET_NAME}' not found. Available: {', '.join(sheets)}")
+            print(f"Error: Sheet '{SHEET_NAME}' not found.")
             return
 
-        # 2. Fetch existing timestamps for deduplication
-        # Assuming timestamp is in Column A
-        result = service.spreadsheets().values().get(
+        # 2. Clear existing data for a "Fresh Refresh" (No History)
+        print(f"Clearing existing data in '{SHEET_NAME}' for fresh update...")
+        service.spreadsheets().values().clear(
             spreadsheetId=clean_spreadsheet_id, 
-            range=f"{SHEET_NAME}!A:A"
+            range=f"{SHEET_NAME}!A:Z"
         ).execute()
         
-        existing_rows = result.get('values', [])
-        existing_timestamps = set([row[0] for row in existing_rows if row])
-        
-        # 3. Filter the new dataframe
+        # 3. Prepare fresh data
         df = pd.read_csv(file_path)
-        # Handle renaming of 'date' to 'timestamp' in previous transformation
-        timestamp_col = 'timestamp' if 'timestamp' in df.columns else 'date'
-        df[timestamp_col] = df[timestamp_col].astype(str)
+        df = df.fillna("")
         
-        new_data_df = df[~df[timestamp_col].isin(existing_timestamps)]
-        
-        if new_data_df.empty:
-            print(f"No new hourly records found. All timestamps already exist in Google Sheets.")
-            return
+        # Include headers in the first row
+        values = [df.columns.tolist()] + df.values.tolist()
             
-        print(f"Found {len(new_data_df)} new records to append.")
+        print(f"Loading {len(df)} forecast records (NOW + 7 Days)...")
 
-        # 4. Prepare data for append
-        # Fill NaN values with empty string to avoid JSON errors with Google API
-        new_data_df = new_data_df.fillna("")
-        
-        if not existing_rows:
-            values = [new_data_df.columns.tolist()] + new_data_df.values.tolist()
-        else:
-            values = new_data_df.values.tolist()
-
-        # 5. Execute Append
+        # 4. Execute Update (using A1 starting point)
         body = {'values': values}
-        result = service.spreadsheets().values().append(
+        result = service.spreadsheets().values().update(
             spreadsheetId=clean_spreadsheet_id, 
             range=f"{SHEET_NAME}!A1",
             valueInputOption='USER_ENTERED', 
             body=body).execute()
         
-        print(f"Success: {result.get('updates').get('updatedRows')} rows appended.")
+        print(f"Success: Dashboard updated for all Bandung regions.")
         
     except Exception as e:
         print(f"An error occurred: {e}")

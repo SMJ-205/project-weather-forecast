@@ -34,16 +34,21 @@ def clean_and_transform(df):
         
     df['rain_intensity'] = df['precipitation'].apply(get_intensity)
     
-    # Renaming for Clarity in Google Sheets/Looker
+    # Renaming for Clarity in Dashboard
     df.rename(columns={
         'time': 'timestamp',
         'temperature_2m': 'temp_c',
+        'apparent_temperature': 'feels_like_c',
+        'relative_humidity_2m': 'humidity_pct',
         'precipitation': 'precip_mm',
         'rain': 'rain_mm',
-        'showers': 'showers_mm'
+        'showers': 'showers_mm',
+        'wind_speed_10m': 'wind_kmh',
+        'cloud_cover': 'cloud_pct',
+        'visibility': 'visibility_m'
     }, inplace=True)
     
-    # Sort by timestamp and city
+    # Sort by city and timestamp
     df.sort_values(by=['city', 'timestamp'], inplace=True)
     
     return df
