@@ -17,10 +17,21 @@ BASE_URL = "https://api.open-meteo.com/v1/forecast"
 RAW_DATA_PATH = "data/raw"
 
 def fetch_weather(city):
-    """Fetches hourly weather data for dashboard (NOW + 7 Days)."""
+    """Fetches Current and Hourly weather data for dashboard."""
     params = {
         "latitude": city["lat"],
         "longitude": city["lon"],
+        "current": [
+            "temperature_2m", 
+            "relative_humidity_2m", 
+            "apparent_temperature", 
+            "precipitation", 
+            "rain", 
+            "showers", 
+            "weather_code", 
+            "cloud_cover", 
+            "wind_speed_10m"
+        ],
         "hourly": [
             "temperature_2m", 
             "relative_humidity_2m", 
@@ -39,20 +50,29 @@ def fetch_weather(city):
         "forecast_days": 8
     }
     
-    print(f"Fetching forecast for {city['name']}...")
+    print(f"Fetching data for {city['name']}...")
     try:
-        # Added 30-second timeout to prevent hanging on slow network
         response = requests.get(BASE_URL, params=params, timeout=30)
         response.raise_for_status()
         data = response.json()
         
-        # Flattening the nested JSON 'hourly' key
-        df = pd.DataFrame(data['hourly'])
-        df['city'] = city['name']
-        df['latitude'] = city['lat']
-        df['longitude'] = city['lon']
+        # 1. Process Hourly
+        hourly_df = pd.DataFrame(data['hourly'])
+        hourly_df['data_type'] = 'Forecast'
         
-        return df
+        # 2. Process Current
+        current_data = data['current']
+        current_df = pd.DataFrame([current_data])
+        current_df['data_type'] = 'Current'
+        
+        # Combine
+        combined_df = pd.concat([current_df, hourly_df], ignore_index=True)
+        
+        combined_df['city'] = city['name']
+        combined_df['latitude'] = city['lat']
+        combined_df['longitude'] = city['lon']
+        
+        return combined_df
     except Exception as e:
         print(f"Error fetching data for {city['name']}: {e}")
         return None

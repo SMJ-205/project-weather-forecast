@@ -48,8 +48,8 @@ def clean_and_transform(df):
         'visibility': 'visibility_m'
     }, inplace=True)
     
-    # Sort by city and timestamp
-    df.sort_values(by=['city', 'timestamp'], inplace=True)
+    # Sort: Current first, then Forecast by timestamp
+    df.sort_values(by=['city', 'data_type', 'timestamp'], ascending=[True, True, True], inplace=True)
     
     return df
 
