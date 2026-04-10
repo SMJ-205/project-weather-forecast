@@ -12,9 +12,9 @@ credentials/
 *.json
 
 # Data
-data/*.csv
-data/*.sqlite
-data/*.json
+data/**/*.csv
+data/**/*.sqlite
+data/**/*.json
 
 # Airflow
 airflow/
